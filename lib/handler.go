@@ -39,6 +39,6 @@ func (h *HttpHandler) ServeHTTP(rw http.ResponseWriter, rq *http.Request) {
 		http.Error(rw, fmt.Sprintf("HTTP method %s for path %s not supported", rq.Method, rq.URL.Path), http.StatusMethodNotAllowed)
 		return
 	}
-	NewLogger("http-handler").Info("%s - %s %s\n", rq.Method, rq.URL.Path, rq.RemoteAddr)
+	NewLogger("http-handler", h.cfg.LogLevel).Info("%s - %s %s\n", rq.Method, rq.URL.Path, rq.RemoteAddr)
 	e.Serve(ctx, h.db, rw, rq)
 }

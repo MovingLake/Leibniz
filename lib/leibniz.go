@@ -33,6 +33,7 @@ type Leibniz struct {
 	Endpoints      map[string]LeibnizHTTPHandler // Map of paths to http.Handler.
 	AllowedMethods map[string]map[string]bool    // Map of paths to allowed methods.
 	RecurringTasks []RecurringTask               // List of recurring tasks.
+	cfg            *LaunchConfig
 }
 
 func New() *Leibniz {
@@ -62,7 +63,7 @@ func (l *Leibniz) AddEndpoint(method, path string, e LeibnizHTTPHandler) {
 
 // readLaunchConfig reads the launch configuration FROM leibniz_a json file at the root of the project.
 func readLaunchConfig() (*LaunchConfig, error) {
-	log := NewLogger("launch-config-reader")
+	log := NewLogger("launch-config-reader", "INFO")
 	// Try to get launch config file path from environment variable.
 	filePath := LaunchConfigDefaultFilePath
 	if path, ok := os.LookupEnv("LEIBNIZ_LAUNCH_CONFIG_FILE"); ok {
@@ -82,11 +83,11 @@ func readLaunchConfig() (*LaunchConfig, error) {
 	return cfg, nil
 }
 
-func (l *Leibniz) launchWorkerPool(ctx context.Context, db *sql.DB, cfg *LaunchConfig) {
-	log := NewLogger("worker-launcher")
+func (l *Leibniz) launchWorkerPool(ctx context.Context, db *sql.DB) {
+	log := NewLogger("worker-launcher", l.cfg.LogLevel)
 	tasks := make(chan *database.Task)
-	for i := 0; i < cfg.NumWorkers; i++ {
-		worker := NewWorker(db, l.TaskRunners)
+	for i := 0; i < l.cfg.NumWorkers; i++ {
+		worker := NewWorker(db, l.TaskRunners, l.cfg)
 		go worker.Run(ctx, i, tasks)
 	}
 	// Read tasks from database and send them to the worker pool.
@@ -123,7 +124,7 @@ func (l *Leibniz) launchWorkerPool(ctx context.Context, db *sql.DB, cfg *LaunchC
 }
 
 func (l *Leibniz) launchRecurringTasks(db *sql.DB) {
-	log := NewLogger("recurring-task-launcher")
+	log := NewLogger("recurring-task-launcher", l.cfg.LogLevel)
 	for {
 		// Fetch all recurring tasks.
 		rows, err := db.Query("SELECT * FROM leibniz_recurring_tasks")
@@ -186,7 +187,7 @@ func (l *Leibniz) launchRecurringTasks(db *sql.DB) {
 }
 
 func (l *Leibniz) createSchema(db *sql.DB) {
-	log := NewLogger("schema-creator")
+	log := NewLogger("schema-creator", l.cfg.LogLevel)
 	// Create the schema in the database.
 	_, err := db.Exec((&database.Task{}).CreateTable())
 	if err != nil {
@@ -199,12 +200,13 @@ func (l *Leibniz) createSchema(db *sql.DB) {
 }
 
 func (l *Leibniz) Start() error {
-	log := NewLogger("leibniz-start")
+	log := NewLogger("leibniz-start", l.cfg.LogLevel)
 	ctx := context.Background()
 	cfg, err := readLaunchConfig()
 	if err != nil {
 		return fmt.Errorf("failed to read launch config: %s", err)
 	}
+	l.cfg = cfg
 	// Connect to the database.
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName))
 	if err != nil {
@@ -212,7 +214,7 @@ func (l *Leibniz) Start() error {
 	}
 	defer db.Close()
 	l.createSchema(db)
-	go l.launchWorkerPool(ctx, db, cfg)
+	go l.launchWorkerPool(ctx, db)
 
 	// Write recurring tasks to the database.
 	for _, task := range l.RecurringTasks {
@@ -235,7 +237,7 @@ func (l *Leibniz) Start() error {
 	go l.launchRecurringTasks(db)
 
 	log.Info("Starting HTTP server...")
-	if err := http.ListenAndServe(":8080", NewHandler(cfg, db, l.Endpoints, l.AllowedMethods)); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), NewHandler(cfg, db, l.Endpoints, l.AllowedMethods)); err != nil {
 		return fmt.Errorf("failed to start HTTP server: %s", err)
 	}
 	return nil

@@ -4,5 +4,7 @@
     "db_port": 5432,
     "db_user": "postgres",
     "db_password": "",
-    "db_name": "leibniz"
+    "db_name": "leibniz",
+    "port": 8080,
+    "log_level": "DEBUG"
 }

@@ -1,101 +1,39 @@
 # Leibniz
 ## Golang framework to bootstrap API-to-API integration projects.
 
-[![Go Reference](https://pkg.go.dev/badge/golang.org/x/example.svg)](https://pkg.go.dev/golang.org/x/example)
+[![Go Reference](https://pkg.go.dev/badge/golang.org/x/example.svg)](https://pkg.go.dev/github.com/movinglake/leibniz)
 
-This repository contains a collection of Go programs and libraries that
-demonstrate the language, standard libraries, and tools.
+Leibniz is a batteries-included framework to kickstart any integration project. It includes scheduling recurring tasks for pulling data as well as an HTTP server to support webhooks.
+
+Named after [Gottfried Wilhelm Leibniz](https://en.wikipedia.org/wiki/Gottfried_Wilhelm_Leibniz) one of the discoverers of calculus including *integrals*.
 
 ## Clone the project
 
 ```
-$ git clone https://go.googlesource.com/example
-$ cd example
-```
-https://go.googlesource.com/example is the canonical Git repository.
-It is mirrored at https://github.com/golang/example.
-
-## [hello](hello/) and [hello/reverse](hello/reverse/)
-
-```
-$ cd hello
-$ go build
-$ ./hello -help
-```
-A trivial "Hello, world" program that uses a library package.
-
-The [hello](hello/) command covers:
-
-* The basic form of an executable command
-* Importing packages (from the standard library and the local repository)
-* Printing strings ([fmt](//golang.org/pkg/fmt/))
-* Command-line flags ([flag](//golang.org/pkg/flag/))
-* Logging ([log](//golang.org/pkg/log/))
-
-The [reverse](hello/reverse/) reverse covers:
-
-* The basic form of a library
-* Conversion between string and []rune
-* Table-driven unit tests ([testing](//golang.org/pkg/testing/))
-
-## [helloserver](helloserver/)
-
-```
-$ cd helloserver
-$ go run .
+$ git clone https://github.com/MovingLake/Leibniz.git
+$ cd Leibniz
 ```
 
-A trivial "Hello, world" web server.
-
-Topics covered:
-
-* Command-line flags ([flag](//golang.org/pkg/flag/))
-* Logging ([log](//golang.org/pkg/log/))
-* Web servers ([net/http](//golang.org/pkg/net/http/))
-
-## [outyet](outyet/)
+## [Sample code](main.go)
 
 ```
-$ cd outyet
-$ go run .
+$ go build .
+$ ./leibniz
 ```
-A web server that answers the question: "Is Go 1.x out yet?"
+Launches the example which contains an [example taskrunner](taskrunner/example.go) as well as an [example  httpendpoint](httpendpoints/example.go). It also adds a single recurring task that generates tasks every minute. The HTTP server is launched to serve on port 8080.
 
-Topics covered:
+## Leibniz [configuration](launch_config.json)
 
-* Command-line flags ([flag](//golang.org/pkg/flag/))
-* Web servers ([net/http](//golang.org/pkg/net/http/))
-* HTML Templates ([html/template](//golang.org/pkg/html/template/))
-* Logging ([log](//golang.org/pkg/log/))
-* Long-running background processes
-* Synchronizing data access between goroutines ([sync](//golang.org/pkg/sync/))
-* Exporting server state for monitoring ([expvar](//golang.org/pkg/expvar/))
-* Unit and integration tests ([testing](//golang.org/pkg/testing/))
-* Dependency injection
-* Time ([time](//golang.org/pkg/time/))
+Leibniz framework needs a json configuration file to set all the pertinent variables. In addition it uses one single environment variable called `LEIBNIZ_LAUNCH_CONFIG_FILE` to designate where the configuration file lives. It uses `launch_config.json` by default.
 
-## [appengine-hello](appengine-hello/)
+## [Logging](lib/log.go)
 
-A trivial "Hello, world" App Engine application intended to be used as the
-starting point for your own code. Please see
-[Google App Engine SDK for Go](https://cloud.google.com/appengine/downloads#Google_App_Engine_SDK_for_Go)
-and [Quickstart for Go in the App Engine Standard Environment](https://cloud.google.com/appengine/docs/standard/go/quickstart).
+Leibniz uses a lightweight wrapper around the `log` library to write logs. The log level can be configured through the `launch_config.json` file, but by default it emits all logs. We recommend limiting to `warn` or `error` levels for production environments.
 
-## [gotypes](gotypes/)
+## Demo repo [Github to Slack](github.com/movinglake/leibniz-demo)
 
-The `go/types` package is a type-checker for Go programs. It is one of the most
-complex packages in Go's standard library, so we have provided this tutorial to
-help you find your bearings. It comes with several example programs that you
-can obtain using `go get` and play with as you learn to build tools that analyze
-or manipulate Go programs.
+Checkout also this repo for more examples on how to use Leibniz.
 
-## [template](template/)
+## Testing
 
-A trivial web server that demonstrates the use of the
-[`template` package](https://golang.org/pkg/text/template/)'s `block` feature.
-
-## [slog-handler-guide](slog-handler-guide/)
-
-The `log/slog` package supports structured logging.
-It features a flexible backend in the form of a `Handler` interface.
-This guide can help you write your own handler.
+Leibniz has 100% unit test coverage. It does not use stubs, mock or fakes for the database, but needs a local postgres DB to run all unit tests.

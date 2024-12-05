@@ -16,13 +16,15 @@ type TaskRunner interface {
 
 type Worker struct {
 	db        *sql.DB
+	cfg       *LaunchConfig
 	runnerMap map[string]TaskRunner
 }
 
-func NewWorker(db *sql.DB, rm map[string]TaskRunner) *Worker {
+func NewWorker(db *sql.DB, rm map[string]TaskRunner, cfg *LaunchConfig) *Worker {
 	return &Worker{
 		db:        db,
 		runnerMap: rm,
+		cfg:       cfg,
 	}
 }
 
@@ -58,7 +60,7 @@ func (w *Worker) resultTaskResult(log *LeibnizLogger, runID int, task *database.
 }
 
 func (w *Worker) Run(ctx context.Context, id int, tasks <-chan *database.Task) {
-	log := NewLogger(fmt.Sprintf("worker-%d", id))
+	log := NewLogger(fmt.Sprintf("worker-%d", id), w.cfg.LogLevel)
 	log.Debug("worker %d started", id)
 	for task := range tasks {
 		log.Debug("worker %d received task id %d name \"%s\"", id, task.ID, task.Name)
